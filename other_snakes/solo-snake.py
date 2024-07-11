@@ -52,7 +52,7 @@ def game_state_to_matrix(game_state: typing.Dict):
         for segment in snake['body']:
             x, y = segment['x'], segment['y']
             matrix[y][x] = 0  # Mark the snake positions with 0
-    
+
     # Mark the position of your own snake
     my_body = game_state["you"]["body"]
     for segment in my_body:
@@ -60,6 +60,7 @@ def game_state_to_matrix(game_state: typing.Dict):
         matrix[y][x] = 0  # Mark the snake positions with 0
 
     return matrix
+
 
 def flood_recursive(x, y, weight, matrix):
     if y < 0 or y >= len(matrix) or x < 0 or x >= len(matrix[0]):
@@ -77,9 +78,11 @@ def flood_recursive(x, y, weight, matrix):
 
     return weight
 
+
 def choose_next_move(move_weight):
     final_move = ""
-    final_move_weight = -float('inf')  # Set to negative infinity to ensure any move_weight is larger
+    final_move_weight = -float(
+        'inf')  # Set to negative infinity to ensure any move_weight is larger
 
     for move, weight in move_weight.items():
         if weight > final_move_weight:
@@ -94,6 +97,7 @@ def choose_next_move(move_weight):
 
     return next_move
 
+
 # move is called on every turn and returns your next move
 # Valid moves are "up", "down", "left", or "right"
 # See https://docs.battlesnake.com/api/example-move for available data
@@ -106,7 +110,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
 
     if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
         move_weight["left"] = 0
-    elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
+    elif my_neck["x"] > my_head[
+            "x"]:  # Neck is right of head, don't move right
         move_weight["right"] = 0
     elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
         move_weight["down"] = 0
@@ -129,7 +134,8 @@ def move(game_state: typing.Dict) -> typing.Dict:
     # Step 2 - Prevent your Battlesnake from colliding with itself
     my_body = game_state['you']['body']
     for a in my_body:
-        if a["x"] == (my_head["x"] - 1) and my_head["y"] == a["y"]:  # left side body
+        if a["x"] == (my_head["x"] -
+                      1) and my_head["y"] == a["y"]:  # left side body
             move_weight["left"] = 0
         if my_head["x"] == (a["x"] - 1) and my_head["y"] == a["y"]:
             move_weight["right"] = 0
@@ -142,45 +148,75 @@ def move(game_state: typing.Dict) -> typing.Dict:
     opponents = game_state['board']['snakes']
     for opponent in opponents:
         for segment in opponent['body']:
-            if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head["y"]:
+            if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
+                    "y"]:
                 move_weight["right"] = 0
-            if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head["y"]:
+            if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
+                    "y"]:
                 move_weight["left"] = 0
-            if segment['x'] == my_head['x'] and segment['y'] == my_head["y"] - 1:
+            if segment['x'] == my_head['x'] and segment[
+                    'y'] == my_head["y"] - 1:
                 move_weight["down"] = 0
-            if segment['x'] == my_head['x'] and segment['y'] == my_head["y"] + 1:
+            if segment['x'] == my_head['x'] and segment[
+                    'y'] == my_head["y"] + 1:
                 move_weight["up"] = 0
-
-    # Step 4 - Move towards food instead of random, to regain health and survive longer
-    food = game_state['board']['food']
-    for f in food:
-        if f['x'] == my_head["x"] + 1 and f['y'] == my_head["y"]:
-            move_weight["right"] += 10  # Arbitrary high value to prioritize food
-        if f['x'] == my_head["x"] - 1 and f['y'] == my_head["y"]:
-            move_weight["left"] += 10
-        if f['x'] == my_head['x'] and f['y'] == my_head["y"] - 1:
-            move_weight["down"] += 10
-        if f['x'] == my_head['x'] and f['y'] == my_head["y"] + 1:
-            move_weight["up"] += 10
 
     # Flood fill weights
     if move_weight["left"] != 0:
         matrix = game_state_to_matrix(game_state)
-        move_weight["left"] = flood_recursive(my_head["x"] - 1, my_head["y"], 0, matrix)
+        move_weight["left"] = flood_recursive(my_head["x"] - 1, my_head["y"],
+                                              0, matrix)
     if move_weight["right"] != 0:
         matrix = game_state_to_matrix(game_state)
-        move_weight["right"] = flood_recursive(my_head["x"] + 1, my_head["y"], 0, matrix)
+        move_weight["right"] = flood_recursive(my_head["x"] + 1, my_head["y"],
+                                               0, matrix)
     if move_weight["up"] != 0:
         matrix = game_state_to_matrix(game_state)
-        move_weight["up"] = flood_recursive(my_head["x"], my_head["y"] + 1, 0, matrix)
+        move_weight["up"] = flood_recursive(my_head["x"], my_head["y"] + 1, 0,
+                                            matrix)
     if move_weight["down"] != 0:
         matrix = game_state_to_matrix(game_state)
-        move_weight["down"] = flood_recursive(my_head["x"], my_head["y"] - 1, 0, matrix)
+        move_weight["down"] = flood_recursive(my_head["x"], my_head["y"] - 1,
+                                              0, matrix)
+
+    # Step 4 - Move towards food instead of random, to regain health and survive longer
+    food = game_state['board']['food']
+    health = game_state['you']['health']
+    if health < 30:
+        for f in food:
+            if f['x'] == my_head["x"] + 1 and f['y'] == my_head["y"]:
+                move_weight[
+                    "right"] += 10  # Arbitrary high value to prioritize food
+            if f['x'] == my_head["x"] - 1 and f['y'] == my_head["y"]:
+                move_weight["left"] += 10
+            if f['x'] == my_head['x'] and f['y'] == my_head["y"] - 1:
+                move_weight["down"] += 10
+            if f['x'] == my_head['x'] and f['y'] == my_head["y"] + 1:
+                move_weight["up"] += 10
+    else:
+        for f in food:
+            if f['x'] == my_head["x"] + 1 and f['y'] == my_head["y"]:
+                if move_weight["right"] >= 10:
+                    move_weight[
+                        "right"] -= 10  # Arbitrary high value to prioritize food
+            if f['x'] == my_head["x"] - 1 and f['y'] == my_head["y"]:
+                if move_weight["left"] >= 10:
+                    move_weight["left"] -= 10
+            if f['x'] == my_head['x'] and f['y'] == my_head["y"] - 1:
+                if move_weight["down"] >= 10:
+                    move_weight["down"] -= 10
+            if f['x'] == my_head['x'] and f['y'] == my_head["y"] + 1:
+                if move_weight["up"] >= 10:
+                    move_weight["up"] -= 10
 
     next_move = choose_next_move(move_weight)
-
+    print("right:", move_weight["right"])
+    print("left:", move_weight["left"])
+    print("up:", move_weight["up"])
+    print("down:", move_weight["down"])
     print(f"MOVE {game_state['turn']}: {next_move}")
     return {"move": next_move}
+
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
