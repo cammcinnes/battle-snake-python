@@ -39,58 +39,148 @@ def end(game_state: typing.Dict):
     print("GAME OVER\n")
 
 
+def game_state_to_matrix(game_state: typing.Dict):
+    width = game_state["board"]["width"]
+    height = game_state["board"]["height"]
+    opponents = game_state['board']['snakes']
+
+    # Initialize the matrix with 1s (empty spaces)
+    matrix = [[1 for _ in range(width)] for _ in range(height)]
+
+    # Mark the positions of the snakes
+    for snake in opponents:
+        for segment in snake['body']:
+            x, y = segment['x'], segment['y']
+            matrix[y][x] = 0  # Mark the snake positions with 0
+
+    # Mark the position of your own snake
+    my_body = game_state["you"]["body"]
+    for segment in my_body:
+        x, y = segment['x'], segment['y']
+        matrix[y][x] = 0  # Mark the snake positions with 0
+
+    return matrix
+
+def flood_recursive(x, y, weight, matrix):
+    if y < 0 or y >= len(matrix) or x < 0 or x >= len(matrix[0]):
+        return weight
+    if matrix[y][x] == 0:
+        return weight
+    matrix[y][x] = 0  # Mark the cell as visited by setting it to 0
+    weight += 1  # Increment the weight
+
+    # Recursively call for all 4 directions
+    weight = flood_recursive(x, y - 1, weight, matrix)
+    weight = flood_recursive(x, y + 1, weight, matrix)
+    weight = flood_recursive(x - 1, y, weight, matrix)
+    weight = flood_recursive(x + 1, y, weight, matrix)
+
+    return weight
+
+def choose_next_move(move_weight):
+    final_move = ""
+    final_move_weight = -float('inf')  # Set to negative infinity to ensure any move_weight is larger
+
+    for move, weight in move_weight.items():
+        if weight > final_move_weight:
+            final_move = move
+            final_move_weight = weight
+
+    # Choose a default move if no final_move is selected
+    if final_move == "":
+        next_move = "up"
+    else:
+        next_move = final_move
+
+    return next_move
+
 # move is called on every turn and returns your next move
 # Valid moves are "up", "down", "left", or "right"
 # See https://docs.battlesnake.com/api/example-move for available data
 def move(game_state: typing.Dict) -> typing.Dict:
-
-    is_move_safe = {"up": True, "down": True, "left": True, "right": True}
+    move_weight = {"up": 1, "down": 1, "left": 1, "right": 1}
 
     # We've included code to prevent your Battlesnake from moving backwards
     my_head = game_state["you"]["body"][0]  # Coordinates of your head
     my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
 
     if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
-        is_move_safe["left"] = False
-
+        move_weight["left"] = 0
     elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
-        is_move_safe["right"] = False
-
+        move_weight["right"] = 0
     elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
-        is_move_safe["down"] = False
-
+        move_weight["down"] = 0
     elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
-        is_move_safe["up"] = False
+        move_weight["up"] = 0
 
-    # TODO: Step 1 - Prevent your Battlesnake from moving out of bounds
-    # board_width = game_state['board']['width']
-    # board_height = game_state['board']['height']
+    # Step 1 - Prevent your Battlesnake from moving out of bounds
+    board_width = game_state['board']['width']
+    board_height = game_state['board']['height']
 
-    # TODO: Step 2 - Prevent your Battlesnake from colliding with itself
-    # my_body = game_state['you']['body']
+    if my_head["x"] == (board_width - 1):  # right side of screen
+        move_weight["right"] = 0
+    if my_head["x"] == 0:  # left side of screen
+        move_weight["left"] = 0
+    if my_head["y"] == (board_height - 1):  # top side of screen
+        move_weight["up"] = 0
+    if my_head["y"] == 0:  # bottom side of screen
+        move_weight["down"] = 0
 
-    # TODO: Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    # opponents = game_state['board']['snakes']
+    # Step 2 - Prevent your Battlesnake from colliding with itself
+    my_body = game_state['you']['body']
+    for a in my_body:
+        if a["x"] == (my_head["x"] - 1) and my_head["y"] == a["y"]:  # left side body
+            move_weight["left"] = 0
+        if my_head["x"] == (a["x"] - 1) and my_head["y"] == a["y"]:
+            move_weight["right"] = 0
+        if my_head["y"] == (a["y"] - 1) and my_head["x"] == a["x"]:
+            move_weight["up"] = 0
+        if a["y"] == (my_head["y"] - 1) and my_head["x"] == a["x"]:
+            move_weight["down"] = 0
 
-    # Are there any safe moves left?
-    safe_moves = []
-    for move, isSafe in is_move_safe.items():
-        if isSafe:
-            safe_moves.append(move)
+    # Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
+    opponents = game_state['board']['snakes']
+    for opponent in opponents:
+        for segment in opponent['body']:
+            if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head["y"]:
+                move_weight["right"] = 0
+            if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head["y"]:
+                move_weight["left"] = 0
+            if segment['x'] == my_head['x'] and segment['y'] == my_head["y"] - 1:
+                move_weight["down"] = 0
+            if segment['x'] == my_head['x'] and segment['y'] == my_head["y"] + 1:
+                move_weight["up"] = 0
 
-    if len(safe_moves) == 0:
-        print(f"MOVE {game_state['turn']}: No safe moves detected! Moving down")
-        return {"move": "down"}
+    # Step 4 - Move towards food instead of random, to regain health and survive longer
+    food = game_state['board']['food']
+    for f in food:
+        if f['x'] == my_head["x"] + 1 and f['y'] == my_head["y"]:
+            move_weight["right"] += 10  # Arbitrary high value to prioritize food
+        if f['x'] == my_head["x"] - 1 and f['y'] == my_head["y"]:
+            move_weight["left"] += 10
+        if f['x'] == my_head['x'] and f['y'] == my_head["y"] - 1:
+            move_weight["down"] += 10
+        if f['x'] == my_head['x'] and f['y'] == my_head["y"] + 1:
+            move_weight["up"] += 10
 
-    # Choose a random move from the safe ones
-    next_move = random.choice(safe_moves)
+    # Flood fill weights
+    if move_weight["left"] != 0:
+        matrix = game_state_to_matrix(game_state)
+        move_weight["left"] = flood_recursive(my_head["x"] - 1, my_head["y"], 0, matrix)
+    if move_weight["right"] != 0:
+        matrix = game_state_to_matrix(game_state)
+        move_weight["right"] = flood_recursive(my_head["x"] + 1, my_head["y"], 0, matrix)
+    if move_weight["up"] != 0:
+        matrix = game_state_to_matrix(game_state)
+        move_weight["up"] = flood_recursive(my_head["x"], my_head["y"] + 1, 0, matrix)
+    if move_weight["down"] != 0:
+        matrix = game_state_to_matrix(game_state)
+        move_weight["down"] = flood_recursive(my_head["x"], my_head["y"] - 1, 0, matrix)
 
-    # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
-    # food = game_state['board']['food']
+    next_move = choose_next_move(move_weight)
 
     print(f"MOVE {game_state['turn']}: {next_move}")
     return {"move": next_move}
-
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
