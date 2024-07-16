@@ -209,8 +209,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
                 move_weight["down"] = 0
                 move_weight["left"] = 0
 
-    #TODO: Prevent battlesnake from doing headon collisions in corners
-
     # Flood fill weights
     if move_weight["left"] != 0:
         matrix = game_state_to_matrix(game_state)
