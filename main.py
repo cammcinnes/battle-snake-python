@@ -189,26 +189,27 @@ def move(game_state: typing.Dict) -> typing.Dict:
                 if segment['x'] == my_head['x'] and segment[
                         'y'] == my_head["y"] + 1:
                     move_weight["up"] = 0
-                # Top Left
-                if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
-                        "y"] + 1:
-                    move_weight["left"] = 0
-                    move_weight["up"] = 0
-                # Top Right
-                if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
-                        "y"] + 1:
-                    move_weight["right"] = 0
-                    move_weight["up"] = 0
-                # Bottom Right
-                if segment['x'] == my_head['x'] + 1 and segment[
-                        'y'] == my_head["y"] - 1:
-                    move_weight["down"] = 0
-                    move_weight["right"] = 0
-                # Bottom Left
-                if segment['x'] == my_head['x'] - 1 and segment[
-                        'y'] == my_head["y"] - 1:
-                    move_weight["down"] = 0
-                    move_weight["left"] = 0
+                ## TODO: FIX BELOW AS SUICIDAL SNAKE
+                # # Top Left
+                # if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
+                #         "y"] + 1:
+                #     move_weight["left"] = 0
+                #     move_weight["up"] = 0
+                # # Top Right
+                # if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
+                #         "y"] + 1:
+                #     move_weight["right"] = 0
+                #     move_weight["up"] = 0
+                # # Bottom Right
+                # if segment['x'] == my_head['x'] + 1 and segment[
+                #         'y'] == my_head["y"] - 1:
+                #     move_weight["down"] = 0
+                #     move_weight["right"] = 0
+                # # Bottom Left
+                # if segment['x'] == my_head['x'] - 1 and segment[
+                #         'y'] == my_head["y"] - 1:
+                #     move_weight["down"] = 0
+                #     move_weight["left"] = 0
 
     # Flood fill weights
     if move_weight["left"] != 0:
