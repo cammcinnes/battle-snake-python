@@ -171,43 +171,44 @@ def move(game_state: typing.Dict) -> typing.Dict:
     # Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
     opponents = game_state['board']['snakes']
     for opponent in opponents:
-        for segment in opponent['body']:
-            # Right
-            if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
-                    "y"]:
-                move_weight["right"] = 0
-            # Left
-            if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
-                    "y"]:
-                move_weight["left"] = 0
-            # Down
-            if segment['x'] == my_head['x'] and segment[
-                    'y'] == my_head["y"] - 1:
-                move_weight["down"] = 0
-            #Up
-            if segment['x'] == my_head['x'] and segment[
-                    'y'] == my_head["y"] + 1:
-                move_weight["up"] = 0
-            # Top Left
-            if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
-                    "y"] + 1:
-                move_weight["left"] = 0
-                move_weight["up"] = 0
-            # Top Right
-            if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
-                    "y"] + 1:
-                move_weight["right"] = 0
-                move_weight["up"] = 0
-            # Bottom Right
-            if segment['x'] == my_head['x'] + 1 and segment[
-                    'y'] == my_head["y"] - 1:
-                move_weight["down"] = 0
-                move_weight["right"] = 0
-            # Bottom Left
-            if segment['x'] == my_head['x'] - 1 and segment[
-                    'y'] == my_head["y"] - 1:
-                move_weight["down"] = 0
-                move_weight["left"] = 0
+        if opponent != game_state['you']:
+            for segment in opponent['body']:
+                # Right
+                if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
+                        "y"]:
+                    move_weight["right"] = 0
+                # Left
+                if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
+                        "y"]:
+                    move_weight["left"] = 0
+                # Down
+                if segment['x'] == my_head['x'] and segment[
+                        'y'] == my_head["y"] - 1:
+                    move_weight["down"] = 0
+                #Up
+                if segment['x'] == my_head['x'] and segment[
+                        'y'] == my_head["y"] + 1:
+                    move_weight["up"] = 0
+                # Top Left
+                if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
+                        "y"] + 1:
+                    move_weight["left"] = 0
+                    move_weight["up"] = 0
+                # Top Right
+                if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
+                        "y"] + 1:
+                    move_weight["right"] = 0
+                    move_weight["up"] = 0
+                # Bottom Right
+                if segment['x'] == my_head['x'] + 1 and segment[
+                        'y'] == my_head["y"] - 1:
+                    move_weight["down"] = 0
+                    move_weight["right"] = 0
+                # Bottom Left
+                if segment['x'] == my_head['x'] - 1 and segment[
+                        'y'] == my_head["y"] - 1:
+                    move_weight["down"] = 0
+                    move_weight["left"] = 0
 
     # Flood fill weights
     if move_weight["left"] != 0:
