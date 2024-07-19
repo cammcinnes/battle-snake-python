@@ -242,7 +242,54 @@ def move(game_state: typing.Dict) -> typing.Dict:
             move_weight["down"] += 10
         if f['x'] == my_head['x'] and f['y'] == my_head["y"] + 1:
             move_weight["up"] += 10
-
+            
+    # Head hunting decision
+    for opponent in opponents:
+        opp_head = opponent['body'][0]
+        if opp_head != my_head:
+            if opponent['length'] < game_state['you']['length']:
+                # Top Left
+                if opp_head['x'] == my_head["x"] - 1 and opp_head['y'] == my_head[
+                        "y"] + 1:
+                    move_weight["left"] += 5
+                    move_weight['up'] += 5
+                # Top Right
+                if opp_head['x'] == my_head["x"] + 1 and opp_head['y'] == my_head[
+                        "y"] + 1:
+                    move_weight["right"] += 5
+                    move_weight['up'] += 5
+                # Bottom Left
+                if opp_head['x'] == my_head['x'] - 1 and opp_head[
+                        'y'] == my_head["y"] - 1:
+                    move_weight["down"] += 5
+                    move_weight["left"] += 5
+                # Bottom Right
+                if opp_head['x'] == my_head['x'] and opp_head[
+                        'y'] == my_head["y"] + 1:
+                    move_weight["down"] += 5
+                    move_weight["right"] += 5
+            else:
+                # Top Left
+                if opp_head['x'] == my_head["x"] - 1 and opp_head['y'] == my_head[
+                        "y"] + 1:
+                    move_weight["left"] -= 5
+                    move_weight['up'] -= 5
+                # Top Right
+                if opp_head['x'] == my_head["x"] + 1 and opp_head['y'] == my_head[
+                        "y"] + 1:
+                    move_weight["right"] -= 5
+                    move_weight['up'] -= 5
+                # Bottom Left
+                if opp_head['x'] == my_head['x'] - 1 and opp_head[
+                        'y'] == my_head["y"] - 1:
+                    move_weight["down"] -= 5
+                    move_weight["left"] -= 5
+                # Bottom Right
+                if opp_head['x'] == my_head['x'] and opp_head[
+                        'y'] == my_head["y"] + 1:
+                    move_weight["down"] -= 5
+                    move_weight["right"] -= 5
+                            
     next_move = choose_next_move(move_weight)
     print("right:", move_weight["right"])
     print("left:", move_weight["left"])
