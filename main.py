@@ -38,264 +38,268 @@ def start(game_state: typing.Dict):
 def end(game_state: typing.Dict):
     print("GAME OVER\n")
 
-
-def game_state_to_matrix(game_state: typing.Dict):
-    width = game_state["board"]["width"]
-    height = game_state["board"]["height"]
-    opponents = game_state['board']['snakes']
-
-    # Initialize the matrix with 1s (empty spaces)
-    matrix = [[1 for _ in range(width)] for _ in range(height)]
-
-    # Mark the positions of the snakes
-    for snake in opponents:
-        for segment in snake['body']:
-            x, y = segment['x'], segment['y']
-            matrix[y][x] = 0  # Mark the snake positions with 0
-    # Mark heads on the snakes
-    for snake in opponents:
-        head_x, head_y = snake['head']['x'], snake['head']['y']
-        if snake['length'] > game_state["you"]['length']:
-            matrix[head_y][head_x] = -1  # Mark heads on the snakes with -1
-        else:
-            matrix[head_y][head_x] = 1
-
-    # Mark the position of your own snake
-    my_body = game_state["you"]["body"]
-    for segment in my_body:
-        x, y = segment['x'], segment['y']
-        matrix[y][x] = 0  # Mark the snake positions with 0
-
+def floodfill(x, y, matrix, points, width, height):
+    if x < 0 or x > width - 1 or y < 0 or y > height - 1 or matrix[x][y] == 1:
+        return points
+    
+    points +=1
+    matrix[x][y] = 1
+    
+    points = floodfill(x - 1, y, matrix, points, width, height)
+    points = floodfill(x + 1, y, matrix, points, width, height)
+    points = floodfill(x, y + 1, matrix, points, width, height)
+    points = floodfill(x, y - 1, matrix, points, width, height)
+    return points
+    
+def mapping(game_state: typing.Dict):
+    snakes = game_state['board']['snakes']
+    width = game_state['board']['width']
+    height = game_state['board']['height']
+    foodlist = game_state['board']['food']
+    
+    matrix = [[0 for _ in range(height)] for _ in range(width)]
+    
+    for snake in snakes:
+        body = snake['body']
+        head = snake['head']
+        counter = 0
+        for body_part in body:
+            x,y = body_part['x'], body_part['y']
+            if counter == 0:
+                matrix[x][y] = 5
+            else:
+                matrix[x][y] = 1
+            counter +=1
+    
+    for food in foodlist:
+        x,y = food['x'], food['y']
+        matrix[x][y] = 2
+    
+    
     return matrix
-
-
-def flood_recursive(x, y, weight, matrix, e_dist):
-    if y < 0 or y >= len(matrix) or x < 0 or x >= len(matrix[0]):
-        return weight
-    if matrix[y][x] == 0:
-        return weight
-    if matrix[y][x] == -1:
-        if e_dist <= 2:
-            return weight - 100
-        else:
-            return weight - 10
-
-    matrix[y][x] = 0  # Mark the cell as visited by setting it to 0
-    weight += 1  # Increment the weight
-    e_dist += 1  #Increment enemy distance
-    # Recursively call for all 4 directions
-    weight = flood_recursive(x, y - 1, weight, matrix, e_dist)
-    weight = flood_recursive(x, y + 1, weight, matrix, e_dist)
-    weight = flood_recursive(x - 1, y, weight, matrix, e_dist)
-    weight = flood_recursive(x + 1, y, weight, matrix, e_dist)
-
-    return weight
-
-
-def choose_next_move(move_weight):
-    final_move = ""
-    final_move_weight = -float(
-        'inf')  # Set to negative infinity to ensure any move_weight is larger
-
-    for move, weight in move_weight.items():
-        if weight > final_move_weight:
-            final_move = move
-            final_move_weight = weight
-        elif weight == final_move_weight:
-            list = [{
-                "dir": final_move,
-                "w": final_move_weight
-            }, {
-                "dir": move,
-                "w": weight
-            }]
-            random.shuffle(list)
-            final_move = list[0]["dir"]
-            final_move_weight = list[0]["w"]
-
-    # Choose a default move if no final_move is selected
-    if final_move == "":
-        next_move = "up"
-    else:
-        next_move = final_move
-
-    return next_move
-
-
+ 
+def isValid(visited, x, y):
+   
+    # If cell lies out of bounds
+    if x < 0 or y < 0 or x >= 10 or y >= 10 or visited[x][y] == 1:
+        return False
+ 
+    # If cell is already visited
+    if visited[x][y] == 3:
+        return False
+ 
+    # Otherwise
+    return True
+ 
+# Function to perform the BFS traversal
+def BFS(visited, a, b):
+   
+    # Stores indices of the matrix cells
+    q = queue()
+ 
+    # Mark the starting cell as visited
+    # and push it into the queue
+    q.append(( a, b ))
+    visited[a][b] = 3
+ 
+    # Iterate while the queue
+    # is not empty
+    while (len(q) > 0):
+        cell = q.popleft()
+        x = cell[0]
+        y = cell[1]
+        
+        visited[x][y] = 3
+        # Go to the adjacent cells
+        for i in range(4):
+            adjx = x + dRow[i]
+            adjy = y + dCol[i]
+            if isValid(visited, adjx, adjy):
+                if visited[adjx][adjy] == 2:
+                    print (adjx, adjy)
+                    return (adjx, adjy)
+                q.append((adjx, adjy))
+                
 # move is called on every turn and returns your next move
 # Valid moves are "up", "down", "left", or "right"
 # See https://docs.battlesnake.com/api/example-move for available data
 def move(game_state: typing.Dict) -> typing.Dict:
-    move_weight = {"up": 1, "down": 1, "left": 1, "right": 1}
+
+    move_points = {"up": 10, "down": 10, "left": 10, "right": 10}
+    moves = ["up", "down", "left", "right"]
 
     # We've included code to prevent your Battlesnake from moving backwards
     my_head = game_state["you"]["body"][0]  # Coordinates of your head
     my_neck = game_state["you"]["body"][1]  # Coordinates of your "neck"
+    my_body = game_state["you"]["body"]
 
     if my_neck["x"] < my_head["x"]:  # Neck is left of head, don't move left
-        move_weight["left"] = 0
-    elif my_neck["x"] > my_head[
-            "x"]:  # Neck is right of head, don't move right
-        move_weight["right"] = 0
+        move_points["left"] = 0
+
+    elif my_neck["x"] > my_head["x"]:  # Neck is right of head, don't move right
+        move_points["right"] = 0
+
     elif my_neck["y"] < my_head["y"]:  # Neck is below head, don't move down
-        move_weight["down"] = 0
+        move_points["down"] = 0
+
     elif my_neck["y"] > my_head["y"]:  # Neck is above head, don't move up
-        move_weight["up"] = 0
+        move_points["up"] = 0
+        
+#     # Food Sensing
+#     food_list = game_state['board']['food']
+#     health = game_state['you']['health']
+#     if health < 10:
+#         for food_piece in food_list:
+#             # Check left side
+#             if my_head['x'] - 1 == food_piece['x'] and my_head['y'] == food_piece['y']:
+#                 move_points['left'] += 10
+                
+#             # Check right side
+#             if my_head['x'] + 1 == food_piece['x'] and my_head['y'] == food_piece['y']:
+#                 move_points['right'] += 10
+#             # Check top side
+#             if my_head['x'] == food_piece['x'] and my_head['y'] + 1 == food_piece['y']:
+#                 move_points['up'] += 10
 
-    # Step 1 - Prevent your Battlesnake from moving out of bounds
-    board_width = game_state['board']['width']
-    board_height = game_state['board']['height']
+#             # Check bottom side
+#             if my_head['x'] == food_piece['x'] and my_head['y'] - 1 == food_piece['y']:
+#                 move_points['down'] += 10
+#     else:
+#             for food_piece in food_list:
+#                 # Check left side
+#                 if my_head['x'] - 1 == food_piece['x'] and my_head['y'] == food_piece['y']:
+#                     move_points['left'] -= 5  
+#                 # Check right side
+#                 if my_head['x'] + 1 == food_piece['x'] and my_head['y'] == food_piece['y']:
+#                     move_points['right'] -= 5
+#                 # Check top side
+#                 if my_head['x'] == food_piece['x'] and my_head['y'] + 1 == food_piece['y']:
+#                     move_points['up'] -= 5
+#                 # Check bottom side
+#                 if my_head['x'] == food_piece['x'] and my_head['y'] - 1 == food_piece['y']:
+#                     move_points['down'] -= 5
 
-    if my_head["x"] == (board_width - 1):  # right side of screen
-        move_weight["right"] = 0
-    if my_head["x"] == 0:  # left side of screen
-        move_weight["left"] = 0
-    if my_head["y"] == (board_height - 1):  # top side of screen
-        move_weight["up"] = 0
-    if my_head["y"] == 0:  # bottom side of screen
-        move_weight["down"] = 0
-
-    # Step 2 - Prevent your Battlesnake from colliding with itself
-    my_body = game_state['you']['body']
-    for a in my_body:
-        if a["x"] == (my_head["x"] -
-                      1) and my_head["y"] == a["y"]:  # left side body
-            move_weight["left"] = 0
-        if my_head["x"] == (a["x"] - 1) and my_head["y"] == a["y"]:
-            move_weight["right"] = 0
-        if my_head["y"] == (a["y"] - 1) and my_head["x"] == a["x"]:
-            move_weight["up"] = 0
-        if a["y"] == (my_head["y"] - 1) and my_head["x"] == a["x"]:
-            move_weight["down"] = 0
-
-    # Step 3 - Prevent your Battlesnake from colliding with other Battlesnakes
-    opponents = game_state['board']['snakes']
-    for opponent in opponents:
-        if opponent != game_state['you']:
-            for segment in opponent['body']:
-                # Right
-                if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
-                        "y"]:
-                    move_weight["right"] = 0
-                # Left
-                if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
-                        "y"]:
-                    move_weight["left"] = 0
-                # Down
-                if segment['x'] == my_head['x'] and segment[
-                        'y'] == my_head["y"] - 1:
-                    move_weight["down"] = 0
-                #Up
-                if segment['x'] == my_head['x'] and segment[
-                        'y'] == my_head["y"] + 1:
-                    move_weight["up"] = 0
-                ## TODO: FIX BELOW AS SUICIDAL SNAKE
-                # # Top Left
-                # if segment['x'] == my_head["x"] - 1 and segment['y'] == my_head[
-                #         "y"] + 1:
-                #     move_weight["left"] = 0
-                #     move_weight["up"] = 0
-                # # Top Right
-                # if segment['x'] == my_head["x"] + 1 and segment['y'] == my_head[
-                #         "y"] + 1:
-                #     move_weight["right"] = 0
-                #     move_weight["up"] = 0
-                # # Bottom Right
-                # if segment['x'] == my_head['x'] + 1 and segment[
-                #         'y'] == my_head["y"] - 1:
-                #     move_weight["down"] = 0
-                #     move_weight["right"] = 0
-                # # Bottom Left
-                # if segment['x'] == my_head['x'] - 1 and segment[
-                #         'y'] == my_head["y"] - 1:
-                #     move_weight["down"] = 0
-                #     move_weight["left"] = 0
-
-    # Flood fill weights
-    if move_weight["left"] != 0:
-        matrix = game_state_to_matrix(game_state)
-        move_weight["left"] = flood_recursive(my_head["x"] - 1, my_head["y"],
-                                              0, matrix, 0)
-    if move_weight["right"] != 0:
-        matrix = game_state_to_matrix(game_state)
-        move_weight["right"] = flood_recursive(my_head["x"] + 1, my_head["y"],
-                                               0, matrix, 0)
-    if move_weight["up"] != 0:
-        matrix = game_state_to_matrix(game_state)
-        move_weight["up"] = flood_recursive(my_head["x"], my_head["y"] + 1, 0,
-                                            matrix, 0)
-    if move_weight["down"] != 0:
-        matrix = game_state_to_matrix(game_state)
-        move_weight["down"] = flood_recursive(my_head["x"], my_head["y"] - 1,
-                                              0, matrix, 0)
-
-    # Step 4 - Move towards food instead of random, to regain health and survive longer
-    food = game_state['board']['food']
+    # Snake Boundary Code
+    width = game_state['board']['width']
+    height = game_state['board']['height']
+    
+    # Right Boundary
+    if my_head['x'] == width - 1:
+        move_points['right'] = 0
+    # Left Boundary
+    if my_head['x'] == 0:
+        move_points['left'] = 0
+    # Top Boundary
+    if my_head['y'] == height - 1:
+        move_points['up'] = 0
+    # Bottom Boundary
+    if my_head['y'] == 0:
+        move_points['down'] = 0
+        
+    # Snake Self Collision Barrier
+    
+    for body_part in my_body:
+        # Check left side
+        if my_head['x'] - 1 == body_part['x'] and my_head['y'] == body_part['y']:
+            move_points['left'] = 0
+        # Check right side
+        if my_head['x'] + 1 == body_part['x'] and my_head['y'] == body_part['y']:
+            move_points['right'] = 0
+        # Check top side
+        if my_head['x'] == body_part['x'] and my_head['y'] + 1 == body_part['y']:
+            move_points['up'] = 0
+        # Check bottom side
+        if my_head['x'] == body_part['x'] and my_head['y'] - 1 == body_part['y']:
+            move_points['down'] = 0
+    # Snake vs Snake Collision avoider
+    
+    snakes = game_state['board']['snakes']
+    
+    for snake in snakes:
+        enemy_body = snake['body']
+        for body_part in enemy_body:
+            # Check left side
+            if my_head['x'] - 1 == body_part['x'] and my_head['y'] == body_part['y']:
+                move_points['left'] = 0
+            # Check right side
+            if my_head['x'] + 1 == body_part['x'] and my_head['y'] == body_part['y']:
+                move_points['right'] = 0
+            # Check top side
+            if my_head['x'] == body_part['x'] and my_head['y'] + 1 == body_part['y']:
+                move_points['up'] = 0
+                
+            # Check bottom side
+            if my_head['x'] == body_part['x'] and my_head['y'] - 1 == body_part['y']:
+                move_points['down'] = 0
+    
+    # BFS for food
+    matrix = mapping(game_state)
+    nearest_food = BFS(matrix, my_head['x'], my_head['y'])
     health = game_state['you']['health']
-    for f in food:
-        if f['x'] == my_head["x"] + 1 and f['y'] == my_head["y"]:
-            move_weight[
-                "right"] += 10  # Arbitrary high value to prioritize food
-        if f['x'] == my_head["x"] - 1 and f['y'] == my_head["y"]:
-            move_weight["left"] += 10
-        if f['x'] == my_head['x'] and f['y'] == my_head["y"] - 1:
-            move_weight["down"] += 10
-        if f['x'] == my_head['x'] and f['y'] == my_head["y"] + 1:
-            move_weight["up"] += 10
-            
-    # Head hunting decision
-    for opponent in opponents:
-        opp_head = opponent['body'][0]
-        if opp_head != my_head:
-            if opponent['length'] < game_state['you']['length']:
-                # Top Left
-                if opp_head['x'] == my_head["x"] - 1 and opp_head['y'] == my_head[
-                        "y"] + 1:
-                    move_weight["left"] += 2
-                    move_weight['up'] += 2
-                # Top Right
-                if opp_head['x'] == my_head["x"] + 1 and opp_head['y'] == my_head[
-                        "y"] + 1:
-                    move_weight["right"] += 2
-                    move_weight['up'] += 2
-                # Bottom Left
-                if opp_head['x'] == my_head['x'] - 1 and opp_head[
-                        'y'] == my_head["y"] - 1:
-                    move_weight["down"] += 2
-                    move_weight["left"] += 2
-                # Bottom Right
-                if opp_head['x'] == my_head['x'] and opp_head[
-                        'y'] == my_head["y"] + 1:
-                    move_weight["down"] += 2
-                    move_weight["right"] += 2
-            else:
-                # Top Left
-                if opp_head['x'] == my_head["x"] - 1 and opp_head['y'] == my_head[
-                        "y"] + 1:
-                    move_weight["left"] -= 2
-                    move_weight['up'] -= 2
-                # Top Right
-                if opp_head['x'] == my_head["x"] + 1 and opp_head['y'] == my_head[
-                        "y"] + 1:
-                    move_weight["right"] -= 2
-                    move_weight['up'] -= 2
-                # Bottom Left
-                if opp_head['x'] == my_head['x'] - 1 and opp_head[
-                        'y'] == my_head["y"] - 1:
-                    move_weight["down"] -= 2
-                    move_weight["left"] -= 2
-                # Bottom Right
-                if opp_head['x'] == my_head['x'] and opp_head[
-                        'y'] == my_head["y"] + 1:
-                    move_weight["down"] -= 2
-                    move_weight["right"] -= 2
-                            
-    next_move = choose_next_move(move_weight)
-    print("right:", move_weight["right"])
-    print("left:", move_weight["left"])
-    print("up:", move_weight["up"])
-    print("down:", move_weight["down"])
+    
+    if nearest_food != None:
+        if health < 99:
+            if nearest_food[0] > my_head['x']:
+                move_points['right'] += 10
+            elif nearest_food[0] < my_head['x']:
+                move_points['left'] += 10
+            elif nearest_food[1] > my_head['y']:
+                move_points['up'] += 10
+            elif nearest_food[1] < my_head['y']:
+                move_points['down'] += 10
+        else:
+            if nearest_food[0] > my_head['x']:
+                move_points['right'] -= 5
+            elif nearest_food[0] < my_head['x']:
+                move_points['left'] -= 5
+            elif nearest_food[1] > my_head['y']:
+                move_points['up'] -= 5
+            elif nearest_food[1] < my_head['y']:
+                move_points['down'] -= 5
+
+    # Flood Fill Code
+    
+    x = my_head['x']
+    y = my_head['y']
+    
+    # Left
+    if move_points['left'] != 0:
+        matrix = mapping(game_state)
+        move_points['left'] += floodfill(x - 1, y, matrix, 0, width, height)
+    # Right
+    if move_points['right'] != 0:
+        matrix = mapping(game_state)
+        move_points['right'] += floodfill(x + 1, y, matrix, 0, width, height)
+    # Up
+    if move_points['up'] != 0:
+        matrix = mapping(game_state)
+        move_points['up'] += floodfill(x, y + 1, matrix, 0, width, height)
+    # Down
+    if move_points['down'] != 0:
+        matrix = mapping(game_state)
+        move_points['down'] += floodfill(x, y - 1, matrix, 0, width, height)
+        
+    # Compare all of the moves to create a list of all moves with the highest score
+    best_moves = []
+    for move, points in move_points.items():
+        if len(best_moves) == 0:
+            best_moves.append(move)
+        else:
+            for good_move in best_moves:
+                if points > move_points[good_move]:
+                    best_moves.clear()
+                    best_moves.append(move)
+                elif points == move_points[good_move]:
+                    best_moves.append(move)
+                    break
+                    
+    # Choose a random move from the best choices
+    next_move = random.choice(best_moves)
+    # TODO: Step 4 - Move towards food instead of random, to regain health and survive longer
+    # food = game_state['board']['food']
+
     print(f"MOVE {game_state['turn']}: {next_move}")
+    print(f"MOVE {game_state['turn']} POINTS: UP - {move_points['up']}, DOWN - {move_points['down']}, LEFT - {move_points['left']}, RIGHT - {move_points['right']}")
     return {"move": next_move}
 
 
