@@ -84,21 +84,17 @@ def mapping(game_state: typing.Dict):
     
     return matrix
  
-def isValid(visited, x, y):
-   
-    # If cell lies out of bounds
-    if x < 0 or y < 0 or x >= 10 or y >= 10 or visited[x][y] == 1 or visited[x][y] == 5:
+def isValid(visited, x, y, width, height):
+    if x < 0 or y < 0 or x >= width - 1 or y >= height - 1 or visited[x][y] == 1 or visited[x][y] == 5:
         return False
- 
-    # If cell is already visited
+    
     if visited[x][y] == 3:
         return False
- 
-    # Otherwise
+    
     return True
- 
+    
 # Function to perform the BFS traversal
-def BFS(visited, a, b):
+def BFS(visited, a, b, width, height):
    
     # Stores indices of the matrix cells
     q = queue()
@@ -120,7 +116,7 @@ def BFS(visited, a, b):
         for i in range(4):
             adjx = x + dRow[i]
             adjy = y + dCol[i]
-            if isValid(visited, adjx, adjy):
+            if isValid(visited, adjx, adjy, width, height):
                 if visited[adjx][adjy] == 2:
                     print (adjx, adjy)
                     return (adjx, adjy)
@@ -240,7 +236,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     
     # BFS for food
     matrix = mapping(game_state)
-    nearest_food = BFS(matrix, my_head['x'], my_head['y'])
+    nearest_food = BFS(matrix, my_head['x'], my_head['y'], width, height)
     health = game_state['you']['health']
     
     if nearest_food != None:
@@ -307,7 +303,6 @@ def move(game_state: typing.Dict) -> typing.Dict:
     print(f"MOVE {game_state['turn']}: {next_move}")
     print(f"MOVE {game_state['turn']} POINTS: UP - {move_points['up']}, DOWN - {move_points['down']}, LEFT - {move_points['left']}, RIGHT - {move_points['right']}")
     return {"move": next_move}
-
 
 # Start server when `python main.py` is run
 if __name__ == "__main__":
