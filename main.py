@@ -87,7 +87,7 @@ def mapping(game_state: typing.Dict):
 def isValid(visited, x, y):
    
     # If cell lies out of bounds
-    if x < 0 or y < 0 or x >= 10 or y >= 10 or visited[x][y] == 1:
+    if x < 0 or y < 0 or x >= 10 or y >= 10 or visited[x][y] == 1 or visited[x][y] == 5:
         return False
  
     # If cell is already visited
