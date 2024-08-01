@@ -45,7 +45,7 @@ def end(game_state: typing.Dict):
     print("GAME OVER\n")
 
 def floodfill(x, y, matrix, points, width, height):
-    if x < 0 or x > width - 1 or y < 0 or y > height - 1 or matrix[x][y] == 1:
+    if x < 0 or x > width - 1 or y < 0 or y > height - 1 or matrix[x][y] == 1 or matrix[x][y] == 5:
         return points
     
     points +=1
