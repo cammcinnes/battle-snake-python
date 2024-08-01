@@ -12,6 +12,12 @@
 
 import random
 import typing
+from collections import deque as queue
+
+# Direction vectors
+dRow = [ -1, 0, 1, 0]
+dCol = [ 0, 1, 0, -1]
+
 
 
 # info is called when you create your Battlesnake on play.battlesnake.com
