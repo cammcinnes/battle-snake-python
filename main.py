@@ -240,7 +240,7 @@ def move(game_state: typing.Dict) -> typing.Dict:
     health = game_state['you']['health']
     
     if nearest_food != None:
-        if health < 99:
+        if health < 69:
             if nearest_food[0] > my_head['x']:
                 move_points['right'] += 10
             elif nearest_food[0] < my_head['x']:
